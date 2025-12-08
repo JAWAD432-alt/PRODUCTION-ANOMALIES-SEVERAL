@@ -1,0 +1,35 @@
+{
+    "name": "Anomalie BAHIA AGADIR",
+    "short_name": "Anomalie BAHIA",
+    "description": "Application de signalement des anomalies de production - BAHIA AGADIR",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#1e40af",
+    "theme_color": "#1e40af",
+    "lang": "fr",
+    "categories": ["productivity", "utilities", "business"],
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Nouveau signalement",
+            "url": "./index.html",
+            "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
+        }
+    ]
+}

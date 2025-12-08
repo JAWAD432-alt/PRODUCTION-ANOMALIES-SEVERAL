@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e40af">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Anomalie BAHIA">
+    <meta name="description" content="Application de signalement des anomalies de production - BAHIA AGADIR">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <title>Anomalie BAHIA</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 20px 16px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .header h1 { font-size: 1.4em; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header .subtitle { font-size: 0.9em; opacity: 0.9; margin-top: 6px; }
+        .container { padding: 14px; max-width: 500px; margin: 0 auto; }
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .card-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .step {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(59,130,246,0.4);
+        }
+        .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .chip {
+            padding: 14px 22px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 30px;
+            font-size: 1.05em;
+            cursor: pointer;
+            color: #475569;
+            font-weight: 600;
+            transition: all 0.2s;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .chip:active { transform: scale(0.96); }
+        .chip.selected { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); border-color: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+        select {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 1.05em;
+            background: #f8fafc;
+            color: #1e293b;
+            font-weight: 500;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 22px;
+        }
+        select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        input, textarea {
+            width: 100%;
+            padding: 16px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 1.05em;
+            background: #f8fafc;
+            color: #1e293b;
+            font-weight: 500;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        textarea { resize: none; height: 90px; }
+        .duration-row { display: flex; align-items: center; gap: 14px; }
+        .duration-row input { width: 110px; text-align: center; font-size: 1.5em; font-weight: 700; }
+        .duration-row span { color: #64748b; font-size: 1.1em; font-weight: 500; }
+        .quick-durations { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .quick-dur {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            color: #475569;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .quick-dur:active { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; }
+        .preview-card {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 2px solid #10b981;
+        }
+        .preview-content {
+            background: white;
+            border-radius: 14px;
+            padding: 16px;
+            font-size: 0.95em;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            color: #1e293b;
+            max-height: 220px;
+            overflow-y: auto;
+            font-family: inherit;
+        }
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            background: white;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+        .btn-whatsapp {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
+            transition: all 0.2s;
+        }
+        .btn-whatsapp:active { transform: scale(0.98); }
+        .btn-whatsapp:disabled { background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); box-shadow: none; }
+        .btn-whatsapp svg { width: 30px; height: 30px; fill: white; }
+        .operator-row { display: flex; gap: 12px; align-items: center; }
+        .operator-row input { flex: 1; }
+        .btn-save-op {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+        }
+        .operator-saved {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #3b82f6;
+        }
+        .operator-saved .name { font-weight: 700; color: #1e40af; font-size: 1.15em; }
+        .operator-saved .change { color: #3b82f6; font-size: 0.95em; cursor: pointer; text-decoration: underline; font-weight: 600; }
+        .hidden { display: none !important; }
+        .autre-input { margin-top: 14px; }
+        .success-toast {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 16px 28px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.1em;
+            box-shadow: 0 6px 20px rgba(16,185,129,0.5);
+            z-index: 2000;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>🔧</span> Signalement Anomalie</h1>
+        <div class="subtitle">BAHIA AGADIR - Production</div>
+    </div>
+    
+    <div class="container">
+        <!-- Opérateur -->
+        <div class="card">
+            <div class="card-title"><span class="step">1</span> Qui signale ?</div>
+            <div id="operatorSaved" class="operator-saved hidden">
+                <span class="name" id="savedName"></span>
+                <span class="change" onclick="changeOperator()">Modifier</span>
+            </div>
+            <div id="operatorInput" class="operator-row">
+                <input type="text" id="operator" placeholder="Votre prénom" autocomplete="off">
+                <button class="btn-save-op" onclick="saveOperator()">OK</button>
+            </div>
+        </div>
+        
+        <!-- Ligne -->
+        <div class="card">
+            <div class="card-title"><span class="step">2</span> Ligne de production</div>
+            <div class="chips">
+                <div class="chip" onclick="selectChip(this, 'ligne', 'Ligne 1')">📍 Ligne 1</div>
+                <div class="chip" onclick="selectChip(this, 'ligne', 'Ligne 2')">📍 Ligne 2</div>
+            </div>
+        </div>
+        
+        <!-- Machine -->
+        <div class="card">
+            <div class="card-title"><span class="step">3</span> Machine</div>
+            <select id="machine" onchange="onMachineChange()">
+                <option value="">-- Sélectionner la machine --</option>
+                <option value="Souffleuse">🟡 Souffleuse</option>
+                <option value="Soutireuse">🔵 Soutireuse</option>
+                <option value="Étiqueteuse">🟢 Étiqueteuse</option>
+                <option value="Fardeleuse">🟠 Fardeleuse</option>
+                <option value="Palettiseur">🟣 Palettiseur</option>
+                <option value="Dateuse">⚪ Dateuse</option>
+            </select>
+        </div>
+        
+        <!-- Zone -->
+        <div class="card hidden" id="zoneCard">
+            <div class="card-title"><span class="step">4</span> Zone / Partie</div>
+            <select id="zone" onchange="onZoneChange()"><option value="">-- Sélectionner la zone --</option></select>
+        </div>
+        
+        <!-- Composant -->
+        <div class="card hidden" id="composantCard">
+            <div class="card-title"><span class="step">5</span> Composant</div>
+            <select id="composant" onchange="onComposantChange()"><option value="">-- Sélectionner le composant --</option></select>
+            <input type="text" id="autreComposant" class="autre-input hidden" placeholder="Préciser le composant..." oninput="updatePreview()">
+        </div>
+        
+        <!-- Anomalie -->
+        <div class="card hidden" id="anomalieCard">
+            <div class="card-title"><span class="step">6</span> Type d'anomalie</div>
+            <select id="anomalie" onchange="onAnomalieChange()"><option value="">-- Sélectionner l'anomalie --</option></select>
+            <input type="text" id="autreAnomalie" class="autre-input hidden" placeholder="Décrire l'anomalie..." oninput="updatePreview()">
+        </div>
+        
+        <!-- Durée -->
+        <div class="card hidden" id="dureeCard">
+            <div class="card-title"><span class="step">7</span> Durée d'arrêt</div>
+            <div class="duration-row">
+                <input type="number" id="duree" placeholder="0" inputmode="numeric" oninput="updatePreview()">
+                <span>minutes</span>
+            </div>
+            <div class="quick-durations">
+                <button class="quick-dur" onclick="setDuree(5)">5 min</button>
+                <button class="quick-dur" onclick="setDuree(10)">10 min</button>
+                <button class="quick-dur" onclick="setDuree(15)">15 min</button>
+                <button class="quick-dur" onclick="setDuree(20)">20 min</button>
+                <button class="quick-dur" onclick="setDuree(30)">30 min</button>
+                <button class="quick-dur" onclick="setDuree(45)">45 min</button>
+                <button class="quick-dur" onclick="setDuree(60)">1 heure</button>
+            </div>
+        </div>
+        
+        <!-- Commentaire -->
+        <div class="card hidden" id="commentCard">
+            <div class="card-title"><span class="step">8</span> Commentaire (optionnel)</div>
+            <textarea id="comment" placeholder="Action corrective, détails supplémentaires..." oninput="updatePreview()"></textarea>
+        </div>
+        
+        <!-- Aperçu -->
+        <div class="card preview-card hidden" id="previewCard">
+            <div class="card-title">📋 Aperçu du message</div>
+            <div class="preview-content" id="preview"></div>
+        </div>
+    </div>
+    
+    <div class="bottom-bar">
+        <button class="btn-whatsapp" id="btnSend" onclick="sendWhatsApp()" disabled>
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Envoyer via WhatsApp
+        </button>
+    </div>
+
+<script>
+const ZONES = {
+    'Souffleuse': ['Zone alimentation', 'Zone chauffe (four)', 'Zone soufflage', 'Zone sortie', 'Utilités'],
+    'Soutireuse': ['Zone entrée', 'Zone rinçage', 'Zone remplissage', 'Zone bouchonnage', 'Zone sortie'],
+    'Étiqueteuse': ['Zone entrée', 'Zone étiquetage', 'Zone sortie', 'Contrôle'],
+    'Fardeleuse': ['Zone entrée', 'Zone groupage', 'Zone filmage', 'Zone four', 'Zone sortie'],
+    'Palettiseur': ['Zone entrée', 'Zone palettisation', 'Zone intercalaire', 'Zone banderolage', 'Zone sortie'],
+    'Dateuse': ['Tête impression', 'Alimentation', 'Contrôle']
+};
+
+const COMPOSANTS = {
+    'Souffleuse|Zone alimentation': ['Trémie préformes', 'Élévateur', 'Rail préformes', 'Convoyeur préformes', 'Roue transfert', 'Autre'],
+    'Souffleuse|Zone chauffe (four)': ['Lampes IR', 'Ventilation four', 'Mandrin', 'Chaîne four', 'Réflecteurs', 'Autre'],
+    'Souffleuse|Zone soufflage': ['Moule 1', 'Moule 2', 'Moule 3', 'Moule 4', 'Moule 5', 'Moule 6', 'Moule 7', 'Moule 8', 'Tige étirage', 'Électrovanne', 'Vérin moule', 'Autre'],
+    'Souffleuse|Zone sortie': ['Convoyeur sortie', 'Guide sortie', 'Étoile sortie', 'Photocellule', 'Autre'],
+    'Souffleuse|Utilités': ['Circuit air HP', 'Circuit air BP', 'Chiller', 'Compresseur', 'Automate PLC', 'Variateur', 'Autre'],
+    'Soutireuse|Zone entrée': ['Convoyeur entrée', 'Convoyeur aérien', 'Étoile entrée', 'Guide entrée', 'Photocellule', 'Autre'],
+    'Soutireuse|Zone rinçage': ['Rinceuse', 'Buses rinçage', 'Pinces rinceuse', 'Autre'],
+    'Soutireuse|Zone remplissage': ['Becs remplissage', 'Débitmètre', 'Réservoir produit', 'Capteur niveau', 'Vanne produit', 'Autre'],
+    'Soutireuse|Zone bouchonnage': ['Tête vissage', 'Bol vibrant bouchons', 'Goulotte bouchons', 'Capteur bouchon', 'Frein bouchon', 'Trimmer', 'Autre'],
+    'Soutireuse|Zone sortie': ['Convoyeur sortie', 'Étoile sortie', 'Guide sortie', 'Photocellule', 'Autre'],
+    'Étiqueteuse|Zone entrée': ['Convoyeur entrée', 'Vis sans fin', 'Étoile entrée', 'Guide entrée', 'Autre'],
+    'Étiqueteuse|Zone étiquetage': ['Bobine étiquettes', 'Sabot distribution', 'Rouleau encolleur', 'Couteau', 'Tambour transfert', 'Autre'],
+    'Étiqueteuse|Zone sortie': ['Convoyeur sortie', 'Chaîne convoyeur', 'Guide sortie', 'Autre'],
+    'Étiqueteuse|Contrôle': ['Caméra Mirror', 'Capteur présence', 'Éjecteur défauts', 'Autre'],
+    'Fardeleuse|Zone entrée': ['Convoyeur entrée', 'Séparateur packs', 'Photocellule', 'Guide entrée', 'Autre'],
+    'Fardeleuse|Zone groupage': ['Doigts pousseurs', 'Tapis groupage', 'Barrière comptage', 'Autre'],
+    'Fardeleuse|Zone filmage': ['Bobine film', 'Danseur tension', 'Bras enrouleur', 'Soudeuse', 'Couteau film', 'Autre'],
+    'Fardeleuse|Zone four': ['Four tunnel', 'Résistances', 'Ventilateur four', 'Tapis four', 'Autre'],
+    'Fardeleuse|Zone sortie': ['Convoyeur sortie', 'Photocellule sortie', 'Autre'],
+    'Palettiseur|Zone entrée': ['Convoyeur entrée', 'Photocellule comptage', 'Guide packs', 'Pousseur', 'Autre'],
+    'Palettiseur|Zone palettisation': ['Table formation', 'Pince préhension', 'Ventouses', 'Bras robot', 'Autre'],
+    'Palettiseur|Zone intercalaire': ['Magasin intercalaires', 'Ventouses intercalaire', 'Capteur présence', 'Autre'],
+    'Palettiseur|Zone banderolage': ['Robopac', 'Bobine film étirable', 'Chariot', 'Pré-étirage', 'Autre'],
+    'Palettiseur|Zone sortie': ['Convoyeur palettes', 'Photocellule sortie', 'Transfert palettes', 'Autre'],
+    'Dateuse|Tête impression': ['Tête jet encre', 'Buses impression', 'Encodeur', 'Autre'],
+    'Dateuse|Alimentation': ['Réservoir encre', 'Pompe encre', 'Filtre', 'Autre'],
+    'Dateuse|Contrôle': ['Capteur détection', 'Interface HMI', 'Autre']
+};
+
+const ANOMALIES = ['Blocage produit','Bourrage','Défaut mécanique','Défaut électrique','Défaut pneumatique','Usure pièce','Casse / Rupture','Réglage nécessaire','Changement format','Nettoyage requis','Manque pièce','Qualité non conforme','Arrêt sécurité','Défaut capteur','Défaut variateur','Défaut Profibus/communication','Surchauffe','Fuite','Autre'];
+
+let data = { ligne: '', machine: '', zone: '', composant: '', anomalie: '', duree: '', comment: '' };
+
+// === OPÉRATEUR ===
+function loadOperator() {
+    const name = localStorage.getItem('bahia_operator') || '';
+    if (name) {
+        document.getElementById('savedName').textContent = name;
+        document.getElementById('operatorSaved').classList.remove('hidden');
+        document.getElementById('operatorInput').classList.add('hidden');
+    }
+}
+
+function saveOperator() {
+    const name = document.getElementById('operator').value.trim();
+    if (name) {
+        localStorage.setItem('bahia_operator', name);
+        loadOperator();
+        showToast('✅ Nom enregistré !');
+    }
+}
+
+function changeOperator() {
+    document.getElementById('operatorSaved').classList.add('hidden');
+    document.getElementById('operatorInput').classList.remove('hidden');
+    document.getElementById('operator').value = '';
+    document.getElementById('operator').focus();
+}
+
+function getOperator() {
+    return localStorage.getItem('bahia_operator') || document.getElementById('operator').value.trim();
+}
+
+// === SÉLECTION ===
+function selectChip(el, field, value) {
+    el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    data[field] = value;
+    updatePreview();
+}
+
+function onMachineChange() {
+    data.machine = document.getElementById('machine').value;
+    data.zone = ''; data.composant = ''; data.anomalie = '';
+    hideCards(['zoneCard', 'composantCard', 'anomalieCard', 'dureeCard', 'commentCard', 'previewCard']);
+    if (data.machine && ZONES[data.machine]) {
+        const s = document.getElementById('zone');
+        s.innerHTML = '<option value="">-- Sélectionner la zone --</option>';
+        ZONES[data.machine].forEach(z => s.innerHTML += `<option value="${z}">${z}</option>`);
+        showCard('zoneCard');
+    }
+    updatePreview();
+}
+
+function onZoneChange() {
+    data.zone = document.getElementById('zone').value;
+    data.composant = ''; data.anomalie = '';
+    hideCards(['composantCard', 'anomalieCard', 'dureeCard', 'commentCard', 'previewCard']);
+    document.getElementById('autreComposant').classList.add('hidden');
+    document.getElementById('autreComposant').value = '';
+    const key = `${data.machine}|${data.zone}`;
+    if (COMPOSANTS[key]) {
+        const s = document.getElementById('composant');
+        s.innerHTML = '<option value="">-- Sélectionner le composant --</option>';
+        COMPOSANTS[key].forEach(c => s.innerHTML += `<option value="${c}">${c}</option>`);
+        showCard('composantCard');
+    }
+    updatePreview();
+}
+
+function onComposantChange() {
+    data.composant = document.getElementById('composant').value;
+    data.anomalie = '';
+    document.getElementById('autreComposant').classList.toggle('hidden', data.composant !== 'Autre');
+    if (data.composant !== 'Autre') document.getElementById('autreComposant').value = '';
+    hideCards(['anomalieCard', 'dureeCard', 'commentCard', 'previewCard']);
+    document.getElementById('autreAnomalie').classList.add('hidden');
+    document.getElementById('autreAnomalie').value = '';
+    if (data.composant) {
+        const s = document.getElementById('anomalie');
+        s.innerHTML = '<option value="">-- Sélectionner l\'anomalie --</option>';
+        ANOMALIES.forEach(a => s.innerHTML += `<option value="${a}">${a}</option>`);
+        showCard('anomalieCard');
+    }
+    updatePreview();
+}
+
+function onAnomalieChange() {
+    data.anomalie = document.getElementById('anomalie').value;
+    document.getElementById('autreAnomalie').classList.toggle('hidden', data.anomalie !== 'Autre');
+    if (data.anomalie !== 'Autre') document.getElementById('autreAnomalie').value = '';
+    if (data.anomalie) { showCard('dureeCard'); showCard('commentCard'); }
+    updatePreview();
+}
+
+function setDuree(val) {
+    document.getElementById('duree').value = val;
+    data.duree = val;
+    updatePreview();
+}
+
+function showCard(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideCards(ids) { ids.forEach(id => document.getElementById(id).classList.add('hidden')); }
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'success-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+}
+
+// === APERÇU ===
+function updatePreview() {
+    const op = getOperator();
+    let comp = data.composant === 'Autre' ? (document.getElementById('autreComposant').value.trim() || 'Autre') : data.composant;
+    let ano = data.anomalie === 'Autre' ? (document.getElementById('autreAnomalie').value.trim() || 'Autre') : data.anomalie;
+    const duree = document.getElementById('duree').value;
+    const comment = document.getElementById('comment').value.trim();
+    
+    let msg = `🔧 *ANOMALIE PRODUCTION*\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    if (op) msg += `👤 *${op}*\n`;
+    if (data.ligne) msg += `📍 ${data.ligne}\n`;
+    if (data.machine) msg += `🏭 ${data.machine}\n`;
+    if (data.zone) msg += `📦 ${data.zone}\n`;
+    if (comp) msg += `🔩 *${comp}*\n`;
+    if (ano) msg += `⚠️ *${ano}*\n`;
+    if (duree) msg += `⏱️ Durée arrêt: *${duree} min*\n`;
+    if (comment) msg += `💬 ${comment}\n`;
+    const now = new Date();
+    msg += `\n📅 ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}`;
+    
+    document.getElementById('preview').textContent = msg;
+    if (data.machine && data.zone) showCard('previewCard');
+    document.getElementById('btnSend').disabled = !(op && data.ligne && data.machine && data.zone && comp && ano && duree);
+}
+
+// === ENVOI WHATSAPP ===
+function sendWhatsApp() {
+    const msg = document.getElementById('preview').textContent;
+    
+    // Sauvegarder dans historique
+    saveHistory(msg);
+    
+    // Ouvrir WhatsApp avec le protocole natif
+    const url = 'whatsapp://send?text=' + encodeURIComponent(msg);
+    window.location.href = url;
+    
+    showToast('✅ WhatsApp ouvert !');
+    setTimeout(resetForm, 2000);
+}
+
+function saveHistory(msg) {
+    let h = JSON.parse(localStorage.getItem('bahia_history') || '[]');
+    h.unshift({ date: new Date().toISOString(), msg: msg.substring(0, 100) });
+    h = h.slice(0, 50);
+    localStorage.setItem('bahia_history', JSON.stringify(h));
+}
+
+function resetForm() {
+    data = { ligne: '', machine: '', zone: '', composant: '', anomalie: '', duree: '', comment: '' };
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('machine').value = '';
+    document.getElementById('duree').value = '';
+    document.getElementById('comment').value = '';
+    document.getElementById('autreComposant').value = '';
+    document.getElementById('autreAnomalie').value = '';
+    hideCards(['zoneCard', 'composantCard', 'anomalieCard', 'dureeCard', 'commentCard', 'previewCard']);
+    document.getElementById('btnSend').disabled = true;
+}
+
+// === INIT ===
+document.addEventListener('DOMContentLoaded', loadOperator);
+
+// Service Worker pour PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
