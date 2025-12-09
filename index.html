@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e40af">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <title>Anomalie BAHIA</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; min-height: 100vh; padding-bottom: 100px; }
+        .header { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 18px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); position: relative; }
+        .header h1 { font-size: 1.2em; font-weight: 700; }
+        .header .subtitle { font-size: 0.85em; opacity: 0.9; margin-top: 4px; }
+        .header .db-status { font-size: 0.75em; margin-top: 6px; padding: 4px 12px; background: rgba(255,255,255,0.2); border-radius: 20px; display: inline-block; }
+        .header .db-status.online { background: rgba(16,185,129,0.3); }
+        .header .db-status.offline { background: rgba(239,68,68,0.3); }
+        .container { padding: 14px; max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .card-title { font-size: 1em; font-weight: 700; color: #1e293b; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
+        .step { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85em; font-weight: 700; }
+        .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .chip { padding: 14px 22px; background: #f1f5f9; border: 2px solid #e2e8f0; border-radius: 30px; font-size: 1.05em; cursor: pointer; color: #475569; font-weight: 600; transition: all 0.2s; }
+        .chip.selected { background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); border-color: #3b82f6; color: white; }
+        select { width: 100%; padding: 16px 18px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 1.05em; background: #f8fafc; color: #1e293b; font-weight: 500; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 22px; }
+        select:focus { outline: none; border-color: #3b82f6; }
+        input, textarea { width: 100%; padding: 16px 18px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 1.05em; background: #f8fafc; color: #1e293b; }
+        input:focus, textarea:focus { outline: none; border-color: #3b82f6; }
+        textarea { resize: none; height: 90px; }
+        .duration-row { display: flex; align-items: center; gap: 14px; }
+        .duration-row input { width: 110px; text-align: center; font-size: 1.5em; font-weight: 700; }
+        .duration-row span { color: #64748b; font-size: 1.1em; }
+        .quick-durations { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .quick-dur { padding: 12px 20px; background: #e2e8f0; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; color: #475569; font-weight: 700; }
+        .quick-dur:active { background: #3b82f6; color: white; }
+        .preview-card { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #10b981; }
+        .preview-content { background: white; border-radius: 14px; padding: 16px; font-size: 0.95em; line-height: 1.7; white-space: pre-wrap; color: #1e293b; max-height: 200px; overflow-y: auto; }
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: white; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); z-index: 1000; }
+        .btn-whatsapp { width: 100%; padding: 20px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; border: none; border-radius: 18px; font-size: 1.2em; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 14px; box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5); }
+        .btn-whatsapp:disabled { background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); box-shadow: none; }
+        .btn-whatsapp svg { width: 30px; height: 30px; fill: white; }
+        .hidden { display: none !important; }
+        .autre-input { margin-top: 14px; }
+        .loading { text-align: center; padding: 40px; color: #64748b; }
+        .loading-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .config-btn { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 1.2em; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .modal-content { background: white; border-radius: 20px; padding: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 16px; color: #1e293b; }
+        .modal-content p { font-size: 0.9em; color: #64748b; margin-bottom: 12px; line-height: 1.5; }
+        .modal-content label { font-weight: 600; color: #1e293b; display: block; margin-bottom: 8px; margin-top: 16px; }
+        .modal-content input { margin-bottom: 8px; }
+        .modal-content small { font-size: 0.8em; color: #94a3b8; display: block; margin-bottom: 16px; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-buttons button { flex: 1; padding: 14px; border-radius: 12px; font-size: 1em; font-weight: 600; cursor: pointer; border: none; }
+        .btn-cancel { background: #e2e8f0; color: #475569; }
+        .btn-save { background: #3b82f6; color: white; }
+        .btn-reload { background: #10b981; color: white; margin-top: 12px; width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; }
+        .success-toast { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 16px 28px; border-radius: 14px; font-weight: 700; z-index: 3000; animation: slideDown 0.3s ease; }
+        .error-toast { position: fixed; top: 100px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 16px 28px; border-radius: 14px; font-weight: 700; z-index: 3000; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .tech-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .tech-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+        .tech-item.selected { background: #dbeafe; border-color: #3b82f6; }
+        .tech-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #3b82f6; pointer-events: none; }
+        .tech-item .tech-name { font-weight: 600; color: #1e293b; font-size: 0.95em; }
+        .tech-item .tech-spec { font-size: 0.75em; color: #64748b; }
+        .selected-techs { margin-top: 12px; padding: 12px; background: #f0fdf4; border-radius: 10px; font-size: 0.9em; color: #166534; }
+        .selected-techs strong { color: #15803d; }
+        .secure-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.2); padding: 2px 8px; border-radius: 10px; font-size: 0.7em; margin-left: 8px; }
+        
+        /* PHOTO STYLES */
+        .photo-section { margin-top: 10px; }
+        .photo-buttons { display: flex; gap: 10px; margin-bottom: 14px; }
+        .photo-btn { flex: 1; padding: 14px; border: 2px dashed #e2e8f0; border-radius: 14px; background: #f8fafc; cursor: pointer; text-align: center; font-weight: 600; color: #475569; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .photo-btn:active { background: #dbeafe; border-color: #3b82f6; }
+        .photo-btn .icon { font-size: 1.8em; }
+        .photo-btn .label { font-size: 0.9em; }
+        .photo-preview { position: relative; margin-top: 10px; }
+        .photo-preview img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 14px; border: 2px solid #10b981; }
+        .photo-preview .remove-photo { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; background: #ef4444; color: white; border: none; border-radius: 50%; font-size: 1.2em; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .photo-preview .photo-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.8em; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="config-btn" onclick="showConfig()">⚙️</button>
+        <h1>🔧 Signalement Anomalie <span class="secure-badge">🔒</span></h1>
+        <div class="subtitle">BAHIA AGADIR</div>
+        <div class="db-status" id="dbStatus">📡 Chargement...</div>
+    </div>
+    
+    <div class="container">
+        <div class="card" id="loadingCard">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Chargement sécurisé...</p>
+            </div>
+        </div>
+        
+        <div id="appContent" class="hidden">
+            <!-- 1. Opérateur -->
+            <div class="card">
+                <div class="card-title"><span class="step">1</span> Opérateur déclarant</div>
+                <select id="operateur" onchange="updatePreview()">
+                    <option value="">-- Sélectionner --</option>
+                </select>
+            </div>
+            
+            <!-- 2. Ligne -->
+            <div class="card">
+                <div class="card-title"><span class="step">2</span> Ligne</div>
+                <div class="chips">
+                    <div class="chip" onclick="selectChip(this, 'ligne', 'Ligne 1')">📍 Ligne 1</div>
+                    <div class="chip" onclick="selectChip(this, 'ligne', 'Ligne 2')">📍 Ligne 2</div>
+                </div>
+            </div>
+            
+            <!-- 3. Machine -->
+            <div class="card">
+                <div class="card-title"><span class="step">3</span> Machine</div>
+                <select id="machine" onchange="onMachineChange()">
+                    <option value="">-- Sélectionner --</option>
+                </select>
+            </div>
+            
+            <!-- 4. Zone -->
+            <div class="card hidden" id="zoneCard">
+                <div class="card-title"><span class="step">4</span> Zone</div>
+                <select id="zone" onchange="onZoneChange()"><option value="">-- Sélectionner --</option></select>
+            </div>
+            
+            <!-- 5. Composant -->
+            <div class="card hidden" id="composantCard">
+                <div class="card-title"><span class="step">5</span> Composant</div>
+                <select id="composant" onchange="onComposantChange()"><option value="">-- Sélectionner --</option></select>
+                <input type="text" id="autreComposant" class="autre-input hidden" placeholder="Préciser..." oninput="updatePreview()">
+            </div>
+            
+            <!-- 6. Anomalie -->
+            <div class="card hidden" id="anomalieCard">
+                <div class="card-title"><span class="step">6</span> Anomalie</div>
+                <select id="anomalie" onchange="onAnomalieChange()"><option value="">-- Sélectionner --</option></select>
+                <input type="text" id="autreAnomalie" class="autre-input hidden" placeholder="Décrire..." oninput="updatePreview()">
+            </div>
+            
+            <!-- 7. Techniciens -->
+            <div class="card hidden" id="techCard">
+                <div class="card-title"><span class="step">7</span> Technicien(s) intervenant(s)</div>
+                <div class="tech-grid" id="techGrid"></div>
+                <div class="selected-techs hidden" id="selectedTechs">
+                    <strong>Sélectionnés :</strong> <span id="techNames"></span>
+                </div>
+            </div>
+            
+            <!-- 8. Durée -->
+            <div class="card hidden" id="dureeCard">
+                <div class="card-title"><span class="step">8</span> Durée d'arrêt</div>
+                <div class="duration-row">
+                    <input type="number" id="duree" placeholder="0" inputmode="numeric" oninput="updatePreview()">
+                    <span>minutes</span>
+                </div>
+                <div class="quick-durations">
+                    <button class="quick-dur" onclick="setDuree(5)">5</button>
+                    <button class="quick-dur" onclick="setDuree(10)">10</button>
+                    <button class="quick-dur" onclick="setDuree(15)">15</button>
+                    <button class="quick-dur" onclick="setDuree(20)">20</button>
+                    <button class="quick-dur" onclick="setDuree(30)">30</button>
+                    <button class="quick-dur" onclick="setDuree(60)">60</button>
+                </div>
+            </div>
+            
+            <!-- 9. Photo -->
+            <div class="card hidden" id="photoCard">
+                <div class="card-title"><span class="step">9</span> Photo (optionnel)</div>
+                <div class="photo-section">
+                    <div class="photo-buttons">
+                        <div class="photo-btn" onclick="document.getElementById('cameraInput').click()">
+                            <span class="icon">📷</span>
+                            <span class="label">Prendre photo</span>
+                        </div>
+                        <div class="photo-btn" onclick="document.getElementById('galleryInput').click()">
+                            <span class="icon">🖼️</span>
+                            <span class="label">Galerie</span>
+                        </div>
+                    </div>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+                    <input type="file" id="galleryInput" accept="image/*" onchange="handlePhoto(this)">
+                    <div class="photo-preview hidden" id="photoPreview">
+                        <img id="photoImg" src="" alt="Photo">
+                        <button class="remove-photo" onclick="removePhoto()">✕</button>
+                        <span class="photo-badge">📎 Photo jointe</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 10. Commentaire -->
+            <div class="card hidden" id="commentCard">
+                <div class="card-title"><span class="step">10</span> Commentaire</div>
+                <textarea id="comment" placeholder="Action corrective, détails..." oninput="updatePreview()"></textarea>
+            </div>
+            
+            <!-- Aperçu -->
+            <div class="card preview-card hidden" id="previewCard">
+                <div class="card-title">📋 Aperçu</div>
+                <div class="preview-content" id="preview"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bottom-bar">
+        <button class="btn-whatsapp" id="btnSend" onclick="sendWhatsApp()" disabled>
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Envoyer via WhatsApp
+        </button>
+    </div>
+    
+    <!-- Modal Config -->
+    <div class="modal hidden" id="configModal">
+        <div class="modal-content">
+            <h3>⚙️ Configuration Sécurisée</h3>
+            <p>🔒 Connexion sécurisée à votre base de données privée.</p>
+            
+            <label>URL du Script Google :</label>
+            <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/...">
+            <small>L'URL fournie après déploiement du script</small>
+            
+            <label>Token de sécurité :</label>
+            <input type="password" id="secretToken" placeholder="Votre mot de passe secret">
+            <small>Le token défini dans votre script</small>
+            
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeConfig()">Annuler</button>
+                <button class="btn-save" onclick="saveConfig()">Enregistrer</button>
+            </div>
+            <button class="btn-reload" onclick="reloadData()">🔄 Recharger les données</button>
+        </div>
+    </div>
+
+<script>
+// ===== DONNÉES PAR DÉFAUT =====
+const DEFAULT_DATA = {
+    machines: [{id:'SOF',nom:'Souffleuse',emoji:'🟡'},{id:'SOU',nom:'Soutireuse',emoji:'🔵'},{id:'ETI',nom:'Étiqueteuse',emoji:'🟢'},{id:'FAR',nom:'Fardeleuse',emoji:'🟠'},{id:'PAL',nom:'Palettiseur',emoji:'🟣'},{id:'DAT',nom:'Dateuse',emoji:'⚪'}],
+    zones: {'SOF':['Zone alimentation','Zone chauffe (four)','Zone soufflage','Zone sortie','Utilités'],'SOU':['Zone entrée','Zone rinçage','Zone remplissage','Zone bouchonnage','Zone sortie'],'ETI':['Zone entrée','Zone étiquetage','Zone sortie','Contrôle'],'FAR':['Zone entrée','Zone groupage','Zone filmage','Zone four','Zone sortie'],'PAL':['Zone entrée','Zone palettisation','Zone intercalaire','Zone banderolage','Zone sortie'],'DAT':['Tête impression','Alimentation','Contrôle']},
+    composants: {'SOF|Zone alimentation':['Trémie préformes','Élévateur','Rail préformes','Convoyeur','Roue transfert','Autre'],'SOF|Zone chauffe (four)':['Lampes IR','Ventilation','Mandrin','Chaîne four','Réflecteurs','Autre'],'SOF|Zone soufflage':['Moule 1','Moule 2','Moule 3','Moule 4','Moule 5','Moule 6','Moule 7','Moule 8','Tige étirage','Électrovanne','Vérin','Autre'],'SOF|Zone sortie':['Convoyeur sortie','Guide','Étoile','Photocellule','Autre'],'SOF|Utilités':['Air HP','Air BP','Chiller','Compresseur','Automate','Variateur','Autre'],'SOU|Zone entrée':['Convoyeur entrée','Convoyeur aérien','Étoile entrée','Guide','Photocellule','Autre'],'SOU|Zone rinçage':['Rinceuse','Buses','Pinces','Autre'],'SOU|Zone remplissage':['Becs remplissage','Débitmètre','Réservoir','Capteur niveau','Vanne','Autre'],'SOU|Zone bouchonnage':['Tête vissage','Bol bouchons','Goulotte','Capteur','Frein','Trimmer','Autre'],'SOU|Zone sortie':['Convoyeur sortie','Étoile sortie','Guide','Photocellule','Autre'],'ETI|Zone entrée':['Convoyeur','Vis sans fin','Étoile','Guide','Autre'],'ETI|Zone étiquetage':['Bobine étiquettes','Sabot','Rouleau colle','Couteau','Tambour','Autre'],'ETI|Zone sortie':['Convoyeur','Chaîne','Guide','Autre'],'ETI|Contrôle':['Caméra Mirror','Capteur','Éjecteur','Autre'],'FAR|Zone entrée':['Convoyeur','Séparateur','Photocellule','Guide','Autre'],'FAR|Zone groupage':['Doigts pousseurs','Tapis','Barrière','Autre'],'FAR|Zone filmage':['Bobine film','Danseur','Bras','Soudeuse','Couteau','Autre'],'FAR|Zone four':['Four tunnel','Résistances','Ventilateur','Tapis','Autre'],'FAR|Zone sortie':['Convoyeur','Photocellule','Autre'],'PAL|Zone entrée':['Convoyeur','Photocellule','Guide','Pousseur','Autre'],'PAL|Zone palettisation':['Table formation','Pince','Ventouses','Bras robot','Autre'],'PAL|Zone intercalaire':['Magasin','Ventouses','Capteur','Autre'],'PAL|Zone banderolage':['Robopac','Bobine film','Chariot','Pré-étirage','Autre'],'PAL|Zone sortie':['Convoyeur palettes','Photocellule','Transfert','Autre'],'DAT|Tête impression':['Tête jet encre','Buses','Encodeur','Autre'],'DAT|Alimentation':['Réservoir','Pompe','Filtre','Autre'],'DAT|Contrôle':['Capteur','Interface','Autre']},
+    anomalies: ['Blocage produit','Bourrage','Défaut mécanique','Défaut électrique','Défaut pneumatique','Usure pièce','Casse / Rupture','Réglage nécessaire','Changement format','Nettoyage','Manque pièce','Qualité non conforme','Arrêt sécurité','Défaut capteur','Défaut variateur','Défaut Profibus','Surchauffe','Fuite','Autre'],
+    operateurs: [{id:'OP01',nom:'Ahmed',equipe:'A'},{id:'OP02',nom:'Mohamed',equipe:'A'},{id:'OP03',nom:'Youssef',equipe:'A'},{id:'OP04',nom:'Hassan',equipe:'B'},{id:'OP05',nom:'Karim',equipe:'B'},{id:'OP06',nom:'Said',equipe:'B'},{id:'OP07',nom:'Omar',equipe:'C'},{id:'OP08',nom:'Rachid',equipe:'C'},{id:'OP09',nom:'Mustapha',equipe:'C'}],
+    techniciens: [{id:'TEC01',nom:'Abdellah',specialite:'Mécanique',equipe:'A'},{id:'TEC02',nom:'Brahim',specialite:'Électrique',equipe:'A'},{id:'TEC03',nom:'Driss',specialite:'Automatisme',equipe:'A'},{id:'TEC04',nom:'Fouad',specialite:'Mécanique',equipe:'B'},{id:'TEC05',nom:'Hamid',specialite:'Électrique',equipe:'B'},{id:'TEC06',nom:'Jalil',specialite:'Automatisme',equipe:'B'},{id:'TEC07',nom:'Khalid',specialite:'Mécanique',equipe:'C'},{id:'TEC08',nom:'Larbi',specialite:'Électrique',equipe:'C'},{id:'TEC09',nom:'Mehdi',specialite:'Automatisme',equipe:'C'},{id:'TEC10',nom:'Nabil',specialite:'Polyvalent',equipe:'Jour'}]
+};
+
+let DB = {...DEFAULT_DATA};
+let data = {operateur:'',ligne:'',machine:'',machineId:'',zone:'',composant:'',anomalie:'',techniciens:[],duree:'',comment:''};
+let photoFile = null;
+let photoDataUrl = null;
+
+// ===== CHARGEMENT SÉCURISÉ =====
+async function loadData() {
+    const scriptUrl = localStorage.getItem('bahia_script_url');
+    const token = localStorage.getItem('bahia_token');
+    
+    if (!scriptUrl || !token) {
+        initApp(false, 'Non configuré');
+        return;
+    }
+    
+    try {
+        const url = `${scriptUrl}?token=${encodeURIComponent(token)}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.error) {
+            showErrorToast('❌ ' + result.error);
+            initApp(false, 'Erreur auth');
+            return;
+        }
+        
+        processData(result);
+        initApp(true, 'Connecté 🔒');
+        
+    } catch (error) {
+        console.error('Erreur:', error);
+        initApp(false, 'Mode hors ligne');
+    }
+}
+
+function processData(result) {
+    if (result.machines?.length > 0) {
+        DB.machines = result.machines.filter(m => m.Actif !== 'NON').map(m => ({id: m.ID, nom: m.Nom, emoji: m.Emoji || ''}));
+    }
+    if (result.zones?.length > 0) {
+        DB.zones = {};
+        result.zones.forEach(z => {
+            if (!DB.zones[z.Machine_ID]) DB.zones[z.Machine_ID] = [];
+            DB.zones[z.Machine_ID].push(z.Zone);
+        });
+    }
+    if (result.composants?.length > 0) {
+        DB.composants = {};
+        result.composants.forEach(c => {
+            const key = `${c.Machine_ID}|${c.Zone}`;
+            if (!DB.composants[key]) DB.composants[key] = [];
+            DB.composants[key].push(c.Composant);
+        });
+        Object.keys(DB.composants).forEach(k => {
+            if (!DB.composants[k].includes('Autre')) DB.composants[k].push('Autre');
+        });
+    }
+    if (result.anomalies?.length > 0) {
+        DB.anomalies = result.anomalies.filter(a => a.Actif !== 'NON').map(a => a.Anomalie);
+        if (!DB.anomalies.includes('Autre')) DB.anomalies.push('Autre');
+    }
+    if (result.operateurs?.length > 0) {
+        DB.operateurs = result.operateurs.filter(o => o.Actif !== 'NON').map(o => ({id: o.ID, nom: o.Nom, equipe: o.Equipe || ''}));
+    }
+    if (result.techniciens?.length > 0) {
+        DB.techniciens = result.techniciens.filter(t => t.Actif !== 'NON').map(t => ({id: t.ID, nom: t.Nom, specialite: t.Specialite || '', equipe: t.Equipe || ''}));
+    }
+}
+
+function initApp(online, statusText) {
+    document.getElementById('loadingCard').classList.add('hidden');
+    document.getElementById('appContent').classList.remove('hidden');
+    
+    const status = document.getElementById('dbStatus');
+    status.textContent = online ? '✅ ' + statusText : '📴 ' + statusText;
+    status.classList.remove('online', 'offline');
+    status.classList.add(online ? 'online' : 'offline');
+    
+    const opSel = document.getElementById('operateur');
+    opSel.innerHTML = '<option value="">-- Sélectionner --</option>';
+    DB.operateurs.forEach(o => opSel.innerHTML += `<option value="${o.nom}">${o.nom} (Éq.${o.equipe})</option>`);
+    
+    const machineSel = document.getElementById('machine');
+    machineSel.innerHTML = '<option value="">-- Sélectionner --</option>';
+    DB.machines.forEach(m => machineSel.innerHTML += `<option value="${m.id}" data-nom="${m.nom}">${m.emoji} ${m.nom}</option>`);
+    
+    renderTechniciens();
+}
+
+function renderTechniciens() {
+    const grid = document.getElementById('techGrid');
+    grid.innerHTML = '';
+    DB.techniciens.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'tech-item';
+        div.id = `tech-${t.id}`;
+        div.onclick = () => toggleTech(t.id, t.nom);
+        div.innerHTML = `<input type="checkbox" id="cb-${t.id}"><div><div class="tech-name">${t.nom}</div><div class="tech-spec">${t.specialite} - Éq.${t.equipe}</div></div>`;
+        grid.appendChild(div);
+    });
+}
+
+function toggleTech(id, nom) {
+    const item = document.getElementById(`tech-${id}`);
+    const cb = document.getElementById(`cb-${id}`);
+    const idx = data.techniciens.findIndex(t => t.id === id);
+    if (idx >= 0) {
+        data.techniciens.splice(idx, 1);
+        item.classList.remove('selected');
+        cb.checked = false;
+    } else {
+        data.techniciens.push({id, nom});
+        item.classList.add('selected');
+        cb.checked = true;
+    }
+    updateSelectedTechs();
+    updatePreview();
+}
+
+function updateSelectedTechs() {
+    const c = document.getElementById('selectedTechs');
+    const n = document.getElementById('techNames');
+    if (data.techniciens.length > 0) {
+        c.classList.remove('hidden');
+        n.textContent = data.techniciens.map(t => t.nom).join(', ');
+    } else {
+        c.classList.add('hidden');
+    }
+}
+
+// ===== PHOTO =====
+function handlePhoto(input) {
+    const file = input.files[0];
+    if (file) {
+        photoFile = file;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            photoDataUrl = e.target.result;
+            document.getElementById('photoImg').src = photoDataUrl;
+            document.getElementById('photoPreview').classList.remove('hidden');
+            updatePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removePhoto() {
+    photoFile = null;
+    photoDataUrl = null;
+    document.getElementById('photoPreview').classList.add('hidden');
+    document.getElementById('cameraInput').value = '';
+    document.getElementById('galleryInput').value = '';
+    updatePreview();
+}
+
+// ===== SÉLECTION =====
+function selectChip(el, field, value) {
+    el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    data[field] = value;
+    updatePreview();
+}
+
+function onMachineChange() {
+    const sel = document.getElementById('machine');
+    data.machineId = sel.value;
+    data.machine = sel.options[sel.selectedIndex]?.dataset?.nom || sel.value;
+    data.zone = ''; data.composant = ''; data.anomalie = '';
+    hideCards(['zoneCard','composantCard','anomalieCard','techCard','dureeCard','photoCard','commentCard','previewCard']);
+    if (data.machineId && DB.zones[data.machineId]) {
+        const s = document.getElementById('zone');
+        s.innerHTML = '<option value="">-- Sélectionner --</option>';
+        DB.zones[data.machineId].forEach(z => s.innerHTML += `<option value="${z}">${z}</option>`);
+        showCard('zoneCard');
+    }
+    updatePreview();
+}
+
+function onZoneChange() {
+    data.zone = document.getElementById('zone').value;
+    data.composant = ''; data.anomalie = '';
+    hideCards(['composantCard','anomalieCard','techCard','dureeCard','photoCard','commentCard','previewCard']);
+    document.getElementById('autreComposant').classList.add('hidden');
+    const key = `${data.machineId}|${data.zone}`;
+    if (DB.composants[key]) {
+        const s = document.getElementById('composant');
+        s.innerHTML = '<option value="">-- Sélectionner --</option>';
+        DB.composants[key].forEach(c => s.innerHTML += `<option value="${c}">${c}</option>`);
+        showCard('composantCard');
+    }
+    updatePreview();
+}
+
+function onComposantChange() {
+    data.composant = document.getElementById('composant').value;
+    data.anomalie = '';
+    document.getElementById('autreComposant').classList.toggle('hidden', data.composant !== 'Autre');
+    hideCards(['anomalieCard','techCard','dureeCard','photoCard','commentCard','previewCard']);
+    document.getElementById('autreAnomalie').classList.add('hidden');
+    if (data.composant) {
+        const s = document.getElementById('anomalie');
+        s.innerHTML = '<option value="">-- Sélectionner --</option>';
+        DB.anomalies.forEach(a => s.innerHTML += `<option value="${a}">${a}</option>`);
+        showCard('anomalieCard');
+    }
+    updatePreview();
+}
+
+function onAnomalieChange() {
+    data.anomalie = document.getElementById('anomalie').value;
+    document.getElementById('autreAnomalie').classList.toggle('hidden', data.anomalie !== 'Autre');
+    if (data.anomalie) {
+        showCard('techCard');
+        showCard('dureeCard');
+        showCard('photoCard');
+        showCard('commentCard');
+    }
+    updatePreview();
+}
+
+function setDuree(val) {
+    document.getElementById('duree').value = val;
+    data.duree = val;
+    updatePreview();
+}
+
+function showCard(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideCards(ids) { ids.forEach(id => document.getElementById(id).classList.add('hidden')); }
+
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'success-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+}
+
+function showErrorToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'error-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
+// ===== APERÇU =====
+function updatePreview() {
+    const op = document.getElementById('operateur').value;
+    let comp = data.composant === 'Autre' ? (document.getElementById('autreComposant').value.trim() || 'Autre') : data.composant;
+    let ano = data.anomalie === 'Autre' ? (document.getElementById('autreAnomalie').value.trim() || 'Autre') : data.anomalie;
+    const duree = document.getElementById('duree').value;
+    const comment = document.getElementById('comment').value.trim();
+    const techNames = data.techniciens.map(t => t.nom).join(', ');
+    
+    let msg = `🔧 *ANOMALIE PRODUCTION*\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    if (op) msg += `👷 Déclarant: *${op}*\n`;
+    if (data.ligne) msg += `📍 ${data.ligne}\n`;
+    if (data.machine) msg += `🏭 ${data.machine}\n`;
+    if (data.zone) msg += `📦 ${data.zone}\n`;
+    if (comp) msg += `🔩 *${comp}*\n`;
+    if (ano) msg += `⚠️ *${ano}*\n`;
+    if (techNames) msg += `🔧 Technicien(s): *${techNames}*\n`;
+    if (duree) msg += `⏱️ Durée: *${duree} min*\n`;
+    if (photoFile) msg += `📷 *Photo jointe*\n`;
+    if (comment) msg += `💬 ${comment}\n`;
+    msg += `\n📅 ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+    
+    document.getElementById('preview').textContent = msg;
+    if (data.machine && data.zone) showCard('previewCard');
+    document.getElementById('btnSend').disabled = !(op && data.ligne && data.machine && data.zone && comp && ano && duree);
+}
+
+// ===== ENVOI WHATSAPP =====
+async function sendWhatsApp() {
+    const msg = document.getElementById('preview').textContent;
+    
+    // Si photo et Web Share API disponible
+    if (photoFile && navigator.canShare) {
+        try {
+            const shareData = {
+                text: msg,
+                files: [photoFile]
+            };
+            
+            if (navigator.canShare(shareData)) {
+                await navigator.share(shareData);
+                showToast('✅ Partagé avec succès !');
+                setTimeout(resetForm, 2000);
+                return;
+            }
+        } catch (err) {
+            console.log('Partage annulé ou erreur:', err);
+            // Fallback: envoyer texte seul
+        }
+    }
+    
+    // Méthode classique (texte seul)
+    if (photoFile) {
+        // Si photo mais pas de Web Share, informer l'utilisateur
+        const msgWithNote = msg + '\n\n⚠️ _Photo à envoyer séparément_';
+        window.location.href = 'whatsapp://send?text=' + encodeURIComponent(msgWithNote);
+        showToast('📷 Envoyez la photo séparément');
+    } else {
+        window.location.href = 'whatsapp://send?text=' + encodeURIComponent(msg);
+        showToast('✅ WhatsApp ouvert !');
+    }
+    
+    setTimeout(resetForm, 2000);
+}
+
+function resetForm() {
+    data = {operateur:'',ligne:'',machine:'',machineId:'',zone:'',composant:'',anomalie:'',techniciens:[],duree:'',comment:''};
+    photoFile = null;
+    photoDataUrl = null;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    ['operateur','machine','duree','comment','autreComposant','autreAnomalie'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('cameraInput').value = '';
+    document.getElementById('galleryInput').value = '';
+    document.getElementById('photoPreview').classList.add('hidden');
+    document.querySelectorAll('.tech-item').forEach(t => t.classList.remove('selected'));
+    document.querySelectorAll('.tech-item input').forEach(cb => cb.checked = false);
+    document.getElementById('selectedTechs').classList.add('hidden');
+    hideCards(['zoneCard','composantCard','anomalieCard','techCard','dureeCard','photoCard','commentCard','previewCard']);
+    document.getElementById('btnSend').disabled = true;
+}
+
+// ===== CONFIG =====
+function showConfig() {
+    document.getElementById('scriptUrl').value = localStorage.getItem('bahia_script_url') || '';
+    document.getElementById('secretToken').value = localStorage.getItem('bahia_token') || '';
+    document.getElementById('configModal').classList.remove('hidden');
+}
+
+function closeConfig() {
+    document.getElementById('configModal').classList.add('hidden');
+}
+
+function saveConfig() {
+    const url = document.getElementById('scriptUrl').value.trim();
+    const token = document.getElementById('secretToken').value.trim();
+    
+    if (url && token) {
+        localStorage.setItem('bahia_script_url', url);
+        localStorage.setItem('bahia_token', token);
+        showToast('✅ Configuration enregistrée');
+    } else {
+        localStorage.removeItem('bahia_script_url');
+        localStorage.removeItem('bahia_token');
+    }
+    
+    closeConfig();
+    reloadData();
+}
+
+function reloadData() {
+    document.getElementById('loadingCard').classList.remove('hidden');
+    document.getElementById('appContent').classList.add('hidden');
+    document.getElementById('dbStatus').textContent = '📡 Chargement...';
+    document.getElementById('dbStatus').classList.remove('online','offline');
+    closeConfig();
+    loadData();
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
